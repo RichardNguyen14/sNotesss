@@ -10,6 +10,7 @@ import { FaFlag, RiZhihuFill,CoHome,LaEllipsisHSolid,IoEllipsisHorizontalCircleS
 addIcons(FaFlag, RiZhihuFill,CoHome,LaEllipsisHSolid,IoEllipsisHorizontalCircleSharp );
 
 const app = createApp(App)
+
 app.component("v-icon", OhVueIcon);
 app.use(router)
 

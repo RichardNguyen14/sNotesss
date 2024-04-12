@@ -14,7 +14,7 @@
 
 <script>
 import { ref, computed } from "vue";
-import { noti_mess_store, clear_noti_mess_store } from "@/stores/notiMessStore";
+import { noti_mess_store } from "@/stores/notiMessStore";
 
 export default {
   setup() {

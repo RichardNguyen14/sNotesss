@@ -15,7 +15,7 @@ export default {
 <template>
   <div class="flex h-screen">
     <SiderBar />
-    <div class="w-full max-h-full">
+    <div class="w-full max-h-full overflow-hidden">
       <Header />
       <router-view></router-view>
     </div>

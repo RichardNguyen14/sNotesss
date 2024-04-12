@@ -12,9 +12,13 @@ import {
 import { noti_mess_store } from "@/stores/notiMessStore";
 import { onMounted } from "vue";
 import notiMess from "./exception/notiMess.vue";
+import pinnote from "./notes/pinnote.vue";
+import Quill from "quill";
+import "quill/dist/quill.snow.css";
 export default {
   components: {
     notiMess,
+    pinnote,
   },
   setup() {
     onMounted(fetchNotes);
@@ -66,7 +70,30 @@ export default {
     const getPinnedNotes = computed(() => {
       return notes.value.filter((note) => note.pinned);
     });
+    const quillEditor = ref(null);
+    let quill;
+    // Hàm kích hoạt chức năng In Đậm
+    const toggleBold = () => {
+      quill.format("bold", !quill.getFormat().bold);
+    };
 
+    // Hàm kích hoạt chức năng In Nghiêng
+    const toggleItalic = () => {
+      quill.format("italic", !quill.getFormat().italic);
+    };
+
+    // Hàm kích hoạt chức năng Danh sách dấu đầu dòng
+    const toggleBullet = () => {
+      quill.format("list", "bullet");
+    };
+    onMounted(() => {
+      quill = new Quill(quillEditor.value, {
+        theme: "snow",
+        modules: {
+          toolbar: false, // Tắt toolbar mặc định vì bạn đã tạo UI tùy chỉnh
+        },
+      });
+    });
     return {
       notes,
       saveNotes,
@@ -76,12 +103,22 @@ export default {
       handleDeleteNote,
       visibleNotes,
       getPinnedNotes,
+      quillEditor,
+      toggleBold,
+      toggleItalic,
+      toggleBullet,
     };
+  },
+  filters: {
+    formatDate(timestamp) {
+      const date = new Date(parseInt(timestamp));
+      return moment(String(value)).format("YYYYMMDD"); // Định dạng ngày tháng
+    },
   },
 };
 </script>
 <template>
-  <div class="pt-3 px-5">
+  <div class="py-3 px-5">
     <noti-mess />
     <div class="flex items-center text-xl gap-3">
       <v-icon name="co-home" />
@@ -90,7 +127,7 @@ export default {
     <div class="flex">
       <!-- Card -->
       <div
-        class="grid grid-cols-1 md:grid-cols-4 gap-4 overflow-y-auto h-[33rem] pt-4 pl-4 pr-4 w-[70%] custom-scrollbar"
+        class="grid grid-cols-1 auto-rows-min md:grid-cols-4 gap-4 overflow-y-auto h-[33rem] pt-4 pl-4 pr-4 w-[70%] custom-scrollbar"
       >
         <div
           class="bg-[#d9f47b] rounded-md max-h-[12rem]"
@@ -98,23 +135,13 @@ export default {
           :key="note.id"
           @click="selectNote(note)"
         >
-          <div class="flex justify-between pr-1 pt-2 w-full">
-            <div class="text-xs ml-3 mb-1">27.NOV</div>
-            <div>
-              <div
-                class="icon-circle w-[20px] h-[15px] rounded-full flex justify-center items-center text-xs text-gray-500 group-hover:bg-gray-300 p-1 transition duration-300"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 320 512"
-                  width="12"
-                  height="12"
-                  fill="[#5d8c81]"
-                >
-                  <path
-                    d="M16 144a144 144 0 1 1 288 0A144 144 0 1 1 16 144zM160 80c8.8 0 16-7.2 16-16s-7.2-16-16-16c-53 0-96 43-96 96c0 8.8 7.2 16 16 16s16-7.2 16-16c0-35.3 28.7-64 64-64zM128 480V317.1c10.4 1.9 21.1 2.9 32 2.9s21.6-1 32-2.9V480c0 17.7-14.3 32-32 32s-32-14.3-32-32z"
-                  />
-                </svg>
+          <div>
+            <div class="flex justify-between pr-1 pt-2 w-full">
+              <div class="text-xs ml-3 mb-1">
+                {{ note.created_at | formatDate }}
+              </div>
+              <div>
+                <pinnote :note-id="note.id" />
               </div>
             </div>
           </div>
@@ -193,22 +220,6 @@ export default {
               <div class="">
                 {{ note.title }}
               </div>
-
-              <div
-                class="icon-circle w-[289px] h-[15px] rounded-full flex justify-end items-center text-xs"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 320 512"
-                  width="12"
-                  height="12"
-                  fill="[#5d8c81]"
-                >
-                  <path
-                    d="M16 144a144 144 0 1 1 288 0A144 144 0 1 1 16 144zM160 80c8.8 0 16-7.2 16-16s-7.2-16-16-16c-53 0-96 43-96 96c0 8.8 7.2 16 16 16s16-7.2 16-16c0-35.3 28.7-64 64-64zM128 480V317.1c10.4 1.9 21.1 2.9 32 2.9s21.6-1 32-2.9V480c0 17.7-14.3 32-32 32s-32-14.3-32-32z"
-                  />
-                </svg>
-              </div>
             </div>
           </div>
         </div>
@@ -234,11 +245,13 @@ export default {
             </div>
             <div class="border-[1px] border-[#ebdf9a] mt-2 rounded-md">
               <div class="flex gap-3 m-1">
+                <!-- font  -->
                 <h1 class="w-1/2">Normal Text</h1>
+                <!-- bikd , italic, buullets  -->
                 <div class="flex w-1/2 gap-1">
-                  <i class="flex-grow">a</i>
-                  <i class="flex-grow">b</i>
-                  <i class="flex-grow">c</i>
+                  <i class="flex-grow" @click="toggleBold">a</i>
+                  <i class="flex-grow" @click="toggleItalic">b</i>
+                  <i class="flex-grow" @click="toggleBullet">c</i>
                 </div>
               </div>
             </div>
