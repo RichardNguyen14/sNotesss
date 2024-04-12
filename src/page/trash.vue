@@ -1,12 +1,13 @@
 <template>
+  <Popup
+    v-if="isOpen"
+    :isOpen="isOpen"
+    :noteId="selectedNoteId"
+    :message="'Bạn có muốn xóa không?'"
+    @confirm="handleConfirm"
+    @cancel="handleCancel"
+  />
   <div class="pt-3 px-5">
-    <Popup
-      v-if="isOpen"
-      :isOpen="isOpen"
-      :message="'Bạn có muốn xóa không?'"
-      @confirm="handleConfirm"
-      @cancel="handleCancel"
-    />
     <div class="flex items-center text-xl gap-3">
       <v-icon name="co-home" />
       <h1 class="text-[#122d28] font-semibold">My Notes</h1>

@@ -121,16 +121,112 @@
     <div class="flex absolute bottom-4 items-center text-white px-6 gap-5">
       <div class="w-[44px] h-[44px] rounded-full bg-[#d9f47b]"></div>
       <div>John Gilbert</div>
-      <div class="pr-3">...</div>
+      <div class="mr-1">
+        <i @click="toggleUserCard">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 448 512"
+            class="icon"
+            :width="20"
+            :height="20"
+          >
+            <path
+              fill="white"
+              d="M8 256a56 56 0 1 1 112 0A56 56 0 1 1 8 256zm160 0a56 56 0 1 1 112 0 56 56 0 1 1 -112 0zm216-56a56 56 0 1 1 0 112 56 56 0 1 1 0-112z"
+            />
+          </svg>
+        </i>
+        <div
+          class="user-card bg-[#1d5d56] text-sm text-[#5d8c81] w-44 h-[10rem] fixed top-[33rem] left-[13rem] rounded-md p-4 z-10 overflow-hidden"
+          v-if="isUserCardVisible"
+        >
+          <button
+            v-if="!isLoggedIn"
+            @click="redirectToLogin"
+            class="py-2 px-4 bg-[#d9f47b] hover:bg-[#94b51c] w-full text-black rounded-md mb-2"
+          >
+            Login
+          </button>
+          <button
+            @click="handleSignOut"
+            class="py-2 px-4 bg-[#d9f47b] hover:bg-[#94b51c] w-full text-black rounded-md mb-2"
+          >
+            Logout
+          </button>
+          <button
+            @click="openChangePasswordPopup"
+            class="py-2 px-4 bg-[#d9f47b] hover:bg-[#94b51c] w-full text-black rounded-md mb-2"
+          >
+            Change Password
+          </button>
+        </div>
+      </div>
+      <div class="popup-overlay" v-if="isChangePasswordPopupVisible"></div>
+      <div
+        class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-20"
+        v-if="isChangePasswordPopupVisible"
+      >
+        <!-- Popup -->
+        <div class="bg-[#1d5d56] p-6 rounded-lg shadow-lg w-96">
+          <h1 class="text-lg font-bold mb-4 text-center">Change Password</h1>
+          <input
+            type="password"
+            placeholder="Old Password"
+            v-model="changePassword.old_password"
+            class="block w-full px-4 py-2 mb-4 border rounded-lg text-black"
+          />
+          <input
+            type="password"
+            placeholder="New Password"
+            v-model="changePassword.new_password"
+            class="block w-full px-4 py-2 mb-4 border rounded-lg text-black"
+          />
+          <input
+            type="password"
+            placeholder="Confirm New Password"
+            v-model="changePassword.confirm_new_password"
+            class="block w-full px-4 py-2 mb-4 border rounded-lg text-black"
+          />
+          <p v-if="signupError" class="text-red-500 text-sm mb-4 items-center">
+            {{ signupError }}
+          </p>
+
+          <div class="flex justify-start space-x-2">
+            <button
+              @click="handleChangePassword"
+              class="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+            >
+              OK
+            </button>
+            <button
+              @click="isChangePasswordPopupVisible = false"
+              class="flex-1 bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 <script setup>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-
+import { sign_out_api, change_password_api } from "@/service/authServices";
+import { clear_data_auth } from "@/stores/authStore";
+import { noti_mess_store } from "@/stores/notiMessStore";
 // Tạo một biến phản ứng để lưu trữ item đang active
 const activeItem = ref(null);
+const changePassword = ref({
+  old_password: "",
+  new_password: "",
+  confirm_new_password: "",
+});
+const isUserCardVisible = ref(false);
+const isLoggedIn = ref(false); // Thêm biến này để kiểm tra trạng thái đăng nhập
+const isChangePasswordPopupVisible = ref(false);
+const signupError = ref("");
 
 // Sử dụng useRouter để có thể chuyển hướng
 const router = useRouter();
@@ -152,6 +248,60 @@ function highlightItem(itemName) {
 function unhighlightItem() {
   activeItem.value = null;
 }
+
+// Phương thức để toggle hiển thị user card
+const toggleUserCard = () => {
+  isUserCardVisible.value = !isUserCardVisible.value;
+  // Kiểm tra nếu đã đăng nhập thì ẩn nút "Login"
+  if (isLoggedIn.value) {
+    isUserCardVisible.value = false;
+  }
+};
+
+// Phương thức để chuyển hướng đến trang đăng nhập
+const redirectToLogin = () => {
+  router.push("/login");
+  localStorage.clear(); // Xóa dữ liệu trong localStorage
+};
+
+// Phương thức xử lý đăng xuất
+const handleSignOut = async () => {
+  try {
+    await sign_out_api();
+    clear_data_auth();
+    isLoggedIn.value = false; // Cập nhật trạng thái đăng nhập khi đăng xuất
+    router.push("/login"); // Chuyển hướng đến trang đăng nhập
+  } catch (error) {
+    console.error("Error signing out:", error);
+  }
+};
+
+// Phương thức để mở popup thay đổi mật khẩu
+const openChangePasswordPopup = () => {
+  isChangePasswordPopupVisible.value = true;
+};
+
+// Phương thức để thay đổi mật khẩu
+const handleChangePassword = async () => {
+  // Kiểm tra xác nhận mật khẩu mới
+  if (
+    changePassword.value.new_password !==
+    changePassword.value.confirm_new_password
+  ) {
+    signupError.value = "New password and confirm password do not match.";
+    return;
+  }
+  // Gọi service để reset mật khẩu
+  try {
+    await change_password_api(changePassword.value);
+    signupError.value = "Sussec";
+    isChangePasswordPopupVisible = false;
+    // Xử lý khi mật khẩu được thay đổi thành công
+  } catch (error) {
+    signupError.value = noti_mess_store.value.mess;
+    // Xử lý khi có lỗi xảy ra
+  }
+};
 </script>
 <style scope>
 .menu-item {

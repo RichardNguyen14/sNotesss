@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="isOpen"
-    class="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50"
+    class="fixed inset-0 flex items-center z-50 justify-center bg-gray-800 bg-opacity-50"
   >
     <div class="bg-white p-8 rounded-lg shadow-lg">
       <p class="text-lg text-gray-800">{{ message }}</p>
@@ -38,7 +38,11 @@ export default {
   emits: ["confirm", "cancel"],
   methods: {
     handleConfirm() {
-      this.$emit("confirm", this.noteId); // Gửi noteId khi confirm
+      if (this.noteId !== null) {
+        this.$emit("confirm"); // Gửi noteId khi confirm
+      } else {
+        console.error("noteId is not defined.");
+      }
     },
     handleCancel() {
       this.$emit("cancel");

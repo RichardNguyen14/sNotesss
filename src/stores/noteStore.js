@@ -2,6 +2,7 @@ import { ref } from "vue";
 
 import { get_notes_api,delete_note_api,update_notes_api } from "@/service/noteServices"
 import { auth_logout } from "@/auth";
+import { set_noti_mess_store } from "./notiMessStore";
 
 const notes = ref([]);
 const deletedNotes = ref([]);
@@ -28,8 +29,8 @@ const updateNotetoNotes = async (updatedNote) => {
 
     if (index !== -1) {
       notes.value.splice(index, 1, updatedNote);
-      console.log("Note updated successfully!", updatedNote);
       await update_notes_api(updatedNote); // Gọi hàm update_notes_api để cập nhật ghi chú trên server
+      set_noti_mess_store({ mess: "update thanh cong" });
     }
   } catch (error) {
     console.error("Error updating note:", error);
@@ -68,8 +69,7 @@ export const togglePinStatus = (noteId) => {
     if (index !== -1) {
       notes.value.splice(index, 1);
     }
-
-    console.log("Note deleted successfully!");
+  set_noti_mess_store({ mess: "Note deleted successfully!" });
   } catch (error) {
     console.error("Error deleting note:", error);
     throw error;

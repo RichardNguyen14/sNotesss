@@ -35,9 +35,9 @@ const set_noti_mess_store = (mess) => {
     noti_mess_store.value.bottom = mess.bottom;
   }
   noti_mess_store.value.show = true;
-  setTimeout(() => {
-    clear_noti_mess_store();
-  }, 6000);
+  // setTimeout(() => {
+  //   clear_noti_mess_store();
+  // }, 3000);
 };
 
 export { noti_mess_store, set_noti_mess_store, clear_noti_mess_store };

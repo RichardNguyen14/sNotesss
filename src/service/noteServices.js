@@ -29,7 +29,7 @@ export const update_notes_api = async (updatedNote) => {
   });
 };
 export const delete_note_api = async (noteId) => {
-  console.log("delete_note_api", noteId);
+
   const url = `/notes/${noteId}`;
   return await g_fetch("DELETE", url).catch((error) => {
     error_services(error);

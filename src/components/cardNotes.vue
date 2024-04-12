@@ -9,12 +9,14 @@ import {
   deletedNotes,
   updateNotetoNotes,
 } from "@/stores/noteStore";
-import { noti_mess_store } from "@/stores/notiMessStore";
+import { noti_mess_store, set_noti_mess_store } from "@/stores/notiMessStore";
 import { onMounted } from "vue";
 import notiMess from "./exception/notiMess.vue";
 import pinnote from "./notes/pinnote.vue";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
+// Include necessary Quill modules
+
 export default {
   components: {
     notiMess,
@@ -36,6 +38,9 @@ export default {
       CreaterNote.value.content = note.content;
       CreaterNote.value.color = note.color;
       isEditingNotes.value = true;
+      if (quill) {
+        quill.root.innerHTML = note.content;
+      }
     };
 
     const saveNotes = async () => {
@@ -44,27 +49,35 @@ export default {
         if (isEditingNotes.value) {
           response = await updateNotetoNotes(CreaterNote.value);
           updateNotetoNotes(response.data);
+          noti_mess_store.value.mess = "Update thành công";
         } else {
           response = await create_note_api(CreaterNote.value);
           addNoteToNotes(response.data);
+          noti_mess_store.value.mess = "Tạo mới ghi chú thành công";
         }
-        clearNoteData();
+        clearNoteData(); // Sau khi hoàn thành, xóa dữ liệu ghi chú hiện tại
       } catch (e) {
-        noti_mess_store.addNotification("Error saving note");
+        noti_mess_store.value.mess = e;
       }
     };
 
     const clearNoteData = () => {
+      // Xóa dữ liệu trong CreaterNote
       CreaterNote.value = { id: null, title: "", content: "", color: "Green" };
       isEditingNotes.value = false;
+
+      // Đặt lại nội dung của Quill editor về trạng thái rỗng
+      if (quill) {
+        quill.root.innerHTML = "";
+      }
     };
+
     const visibleNotes = computed(() => {
       return notes.value.filter(
         (note) => !deletedNotes.value.includes(note.id)
       );
     });
     const handleDeleteNote = (noteID) => {
-      console.log("xoa", noteID);
       deleteNoteTemporarily(noteID);
     };
     const getPinnedNotes = computed(() => {
@@ -72,28 +85,23 @@ export default {
     });
     const quillEditor = ref(null);
     let quill;
-    // Hàm kích hoạt chức năng In Đậm
-    const toggleBold = () => {
-      quill.format("bold", !quill.getFormat().bold);
-    };
-
-    // Hàm kích hoạt chức năng In Nghiêng
-    const toggleItalic = () => {
-      quill.format("italic", !quill.getFormat().italic);
-    };
-
-    // Hàm kích hoạt chức năng Danh sách dấu đầu dòng
-    const toggleBullet = () => {
-      quill.format("list", "bullet");
-    };
     onMounted(() => {
       quill = new Quill(quillEditor.value, {
         theme: "snow",
         modules: {
-          toolbar: false, // Tắt toolbar mặc định vì bạn đã tạo UI tùy chỉnh
+          toolbar: [
+            [{ font: ["sans-serif", "serif", "monospace"] }], // Define font options
+            ["bold", "italic"], // Toggle buttons for bold and italic
+            [{ list: "bullet" }], // Toggle button for bullet list
+          ],
         },
       });
+
+      quill.on("text-change", function () {
+        CreaterNote.value.content = quill.root.innerHTML; // Sync Quill editor content with Vue data model
+      });
     });
+
     return {
       notes,
       saveNotes,
@@ -104,16 +112,7 @@ export default {
       visibleNotes,
       getPinnedNotes,
       quillEditor,
-      toggleBold,
-      toggleItalic,
-      toggleBullet,
     };
-  },
-  filters: {
-    formatDate(timestamp) {
-      const date = new Date(parseInt(timestamp));
-      return moment(String(value)).format("YYYYMMDD"); // Định dạng ngày tháng
-    },
   },
 };
 </script>
@@ -138,7 +137,7 @@ export default {
           <div>
             <div class="flex justify-between pr-1 pt-2 w-full">
               <div class="text-xs ml-3 mb-1">
-                {{ note.created_at | formatDate }}
+                {{ note.created_at }}
               </div>
               <div>
                 <pinnote :note-id="note.id" />
@@ -156,9 +155,10 @@ export default {
           <div
             class="px-5 pb-2 inline-block h-32 max-h-[5rem] text-sm overflow-hidden"
           >
-            <p class="text-[#577245] overflow-hidden max-w-36">
-              {{ note.content }}
-            </p>
+            <div
+              v-html="note.content"
+              class="text-[#577245] overflow-hidden max-w-36"
+            ></div>
           </div>
           <div
             class="rounded-xl bg-slate-400 max-w-fit ml-5 w-full px-2 cursor-pointer mb-2"
@@ -170,7 +170,7 @@ export default {
             @click.stop="handleDeleteNote(note.id)"
           >
             <i
-              class="text-gray-500 group-hover:bg-gray-300 rounded-full p-1 transition duration-300"
+              class="text-gray-500 group-hover:bg-gray-300 rounded-full p-1 transition duration-300 z-[9]"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -233,7 +233,6 @@ export default {
 
             <div class="grid gap-2">
               <div class="flex items-center">
-                <font-awesome-icon :icon="['fas', 'thumbtack']" />
                 <input
                   class="text-black bg-[#f2edd3] outline-none border-none"
                   type="text"
@@ -241,29 +240,18 @@ export default {
                   v-model="CreaterNote.title"
                 />
               </div>
-              <div class="border-t-[1px] border-[#ebdf9a]"></div>
             </div>
             <div class="border-[1px] border-[#ebdf9a] mt-2 rounded-md">
-              <div class="flex gap-3 m-1">
-                <!-- font  -->
-                <h1 class="w-1/2">Normal Text</h1>
-                <!-- bikd , italic, buullets  -->
-                <div class="flex w-1/2 gap-1">
-                  <i class="flex-grow" @click="toggleBold">a</i>
-                  <i class="flex-grow" @click="toggleItalic">b</i>
-                  <i class="flex-grow" @click="toggleBullet">c</i>
-                </div>
-              </div>
+              <div ref="quillEditor"></div>
             </div>
 
             <div class="outline-none border-b-[1px] border-[#ebdf9a] pt-2 pb-2">
-              <textarea
-                id="message"
-                rows="12"
+              <div
+                ref="quillEditor"
+                rows="9"
                 class="textarea-lined resize-none w-full text-sm text-gray-900 bg-[#f2edd3] border-none outline-none"
                 placeholder="Enter Details"
-                v-model="CreaterNote.content"
-              ></textarea>
+              ></div>
             </div>
           </div>
 
@@ -272,7 +260,7 @@ export default {
               class="inline-flex justify-center border-none mt-3 rounded-md w-[13rem] bg-[#fe5300]"
             >
               <button
-                class="text-white text-center p-2 hover:bg-blue-500 transition-colors"
+                class="text-white text-center p-2 hover:bg-[#be6e47] w-full transition-colors"
                 @click="saveNotes"
               >
                 Add New Note
@@ -336,5 +324,30 @@ export default {
 }
 .icon-wrapper:hover .icon-circle {
   background-color: #f0ffc6; /* Change the background color on hover */
+}
+/* Style for the Quill toolbar */
+
+.ql-container {
+  max-height: 280px; /* Giới hạn chiều rộng của khung soạn thảo */
+  /* Bo tròn góc */
+  border-radius: 10px; /* Bo tròn góc */
+  border: none; /* Loại bỏ đường viền */
+  overflow: hidden; /* Ẩn các nội dung vượt quá border */
+  height: 280px;
+}
+
+/* Style for the Quill text input area */
+.ql-editor {
+  max-height: 280px; /* Giới hạn chiều cao tối đa của vùng nhập văn bản */
+  overflow-y: auto; /* Hiển thị thanh cuộn dọc khi nội dung vượt quá chiều cao tối đa */
+  padding: 3px; /* Đệm bên trong để văn bản không dính sát viền */
+  margin-bottom: 10px;
+  border: none;
+  border-radius: 8px; /* Bo tròn góc cho vùng nhập liệu, đồng nhất với container */
+}
+.ql-toolbar {
+  border-radius: 10px;
+  margin-bottom: 4px;
+  border: 0;
 }
 </style>
