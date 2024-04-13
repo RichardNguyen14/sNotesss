@@ -7,13 +7,13 @@
     @confirm="handleConfirm"
     @cancel="handleCancel"
   />
-  <div class="pt-3 px-5">
+  <div class="pt-3 px-5 h-[80%]">
     <div class="flex items-center text-xl gap-3">
       <v-icon name="co-home" />
       <h1 class="text-[#122d28] font-semibold">My Notes</h1>
     </div>
     <div
-      class="grid grid-cols-1 md:grid-cols-6 gap-4 overflow-y-auto h-[33rem] max-h-[33rem] pt-4 pl-4 pr-4 w-[100%] custom-scrollbar"
+      class="grid grid-cols-1 md:grid-cols-6 gap-4 s h-full pt-4 pl-4 pr-4 w-[100%] custom-scrollbar"
     >
       <div
         class="bg-[#d9f47b] rounded-md max-h-[12rem]"

@@ -17,6 +17,7 @@ export const create_note_api = async (noteData) => {
   });
 };
 export const update_notes_api = async (updatedNote) => {
+  console.log ("4",updatedNote)
   const url = `/notes/${updatedNote.id}`;
   const requestData = {
     title: updatedNote.title,
